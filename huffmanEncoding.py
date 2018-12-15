@@ -170,24 +170,63 @@ class Coder:
         diction = self.__createDictionaryForSymbols(rightList, currentSeq, diction)
         
         return diction
-        
+    
     def __merge2LeastBucketsIntoOne(self, symbolsList):
+        #print("B4")
+        valuesList = []
+        for i in range(0, len(symbolsList)):
+            valuesList.append(self.__calculateTotalValueOfBucket(symbolsList[i]))
+        #print(len(valuesList))
+        #print(len(symbolsList))
+        leastIndex = valuesList.index(min(valuesList))
+        least = symbolsList[leastIndex]
+        del symbolsList[leastIndex]
+        del valuesList[leastIndex]
+        
+        secondLeastIndex = valuesList.index(min(valuesList))
+        secLeast = symbolsList[secondLeastIndex]
+        del symbolsList[secondLeastIndex]
+        
+        secLeast.extend(least)
+        symbolsList.append(secLeast)
+        return symbolsList
+        
+    '''
+    def __merge2LeastBucketsIntoOne(self, symbolsList):
+        print("B4")
         symbolsList = self.__sortDescending(symbolsList)
         least = symbolsList[-1]
         secLeast = symbolsList[-2]
         least.extend(secLeast)
         symbolsList.pop()
         symbolsList.pop()
-        symbolsList.append(least)
-        
+        symbolsList.append(least) 
         return symbolsList
-        
+    '''
     def __sortDescending(self, symbolsList):
-        #print(symbolsList)
+        valuesList = []
+        #print(len(symbolsList))
+        for i in range(0, len(symbolsList)):
+            valuesList.append(self.__calculateTotalValueOfBucket(symbolsList[i]))
         for i in range(0, len(symbolsList)-1):
             for j in range(i+1, len(symbolsList)):
+                if(valuesList[i] > valuesList[j]):
+                    tempVal = valuesList[i]
+                    valuesList[i] = valuesList[j]
+                    valuesList[j] = tempVal
+                    temp = symbolsList[i]
+                    symbolsList[i] = symbolsList[j]
+                    symbolsList[j] = temp
+                    i -= 1
+        return symbolsList
+    '''
+    def __sortDescending(self, symbolsList):
+        #print(symbolsList)
+        print(len(symbolsList))
+        for i in range(0, len(symbolsList)-1):
+            value1 = self.__calculateTotalValueOfBucket(symbolsList[i])
+            for j in range(i+1, len(symbolsList)):
                 #print("%d is %d" % (i, j))
-                value1 = self.__calculateTotalValueOfBucket(symbolsList[i])
                 #print(value1)
                 value2 = self.__calculateTotalValueOfBucket(symbolsList[j])
                 #print(value2)
@@ -197,7 +236,7 @@ class Coder:
                     symbolsList[j] = temp
                     i -= 1
         return symbolsList
-    
+    '''
     def __calculateTotalValueOfBucket(self, bucket):
         totalValue = 0
         for item in bucket:
@@ -234,28 +273,52 @@ class CodeWriter:
         #Rasom viska iki galo - uzkoduota zodi
         encodedWord = self.encodedData.getEncodedWord()
         suffixBits = self.encodedData.getSuffixBits()
+        #print("suffix bit length")
+        #print(len(suffixBits))
         letterLength = len(self.encodingRules.getLetters()[0])
         trashAndSuffixBitsLengthByte = self.__getTrashAndSuffixBitsLengthByte(len(encodedWord), len(suffixBits))
         letterLengthByte = self.__int_to_bytes(letterLength)
         suffixBitsBytes = self.__getBytesFromNonFullBits(suffixBits)
         encodedWordInBytes = self.__getEncodedWordInBytes(encodedWord)
         treeRulesBytes = self.__getBytesFromNonFullBits(self.encodingRules.getTreeBits())
+        
+        
         letters = self.encodingRules.getLetters()
         letters = self.__convertLettersToBitsArray(letters)
         lettersBytes = self.__getBytesFromNonFullBits(letters)
+        #print(len(lettersBytes))
         treeRequiredBytes = len(treeRulesBytes)
-        treeRequiredBytesByte = self.__int_to_bytes(treeRequiredBytes)   
-        
+        treeRequiredBytesBytes = self.__changeTo2Bytes(self.__int_to_bytes(treeRequiredBytes))
+        #print(len(encodedWord))
+        print("tree rules")
+        print(len(treeRulesBytes))
+        bbb = bitarray()
+        bbb.frombytes(treeRequiredBytesBytes)
+        print(bbb)
         
         f = open(fileName, 'wb')
         f.write(trashAndSuffixBitsLengthByte)
         f.write(letterLengthByte)
+        print("suffix")
+        print(len(suffixBitsBytes))
         f.write(suffixBitsBytes)
-        f.write(treeRequiredBytesByte)
+        print("tree")
+        print(len(treeRequiredBytesBytes))
+        f.write(treeRequiredBytesBytes)
         f.write(treeRulesBytes)
         f.write(lettersBytes)
         f.write(encodedWordInBytes)
         f.close()
+    def __changeTo2Bytes(self, bytes):
+        if len(bytes) == 2:
+            return bytes
+        else:
+            bits = bitarray()
+            bits.frombytes(bytes)
+            newBits = bitarray(8)
+            newBits.setall(False)
+            newBits.extend(bits)
+            return newBits.tobytes()
     def __convertLettersToBitsArray(self, letters):
         bits = bitarray()
         for letter in letters:
@@ -320,9 +383,9 @@ if codedSymbolInBitsLength < 2 or codedSymbolInBitsLength > 24:
     sys.exit(3)
 '''
 #Nustatom kiek bitu traktuosim kad yra raides ilgis
-codedSymbolInBitsLength = 8
+codedSymbolInBitsLength = 5
 #Nuskaitom norima uzkoduoti faila
-f = open(r"C:\Users\Dovydas\infoTeorija\tests\fileToRead.txt", 'rb')
+f = open(r"C:\Users\Dovydas\infoTeorija\tests\test.jpg", 'rb')
 allBytes = f.read()
 #Nuskaitom faila i kuri uzkoduosim 
 text3 =  r"C:\Users\Dovydas\infoTeorija\tests\encodedFile.txt"

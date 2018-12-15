@@ -133,6 +133,7 @@ class CodeReader:
         #Skaitom kiek bituku paskutiniame teksto baite bereiksmiai + tame paciame baite kiek liko neuzkoduotu bituku (originalaus zodzio galune)
         trashAndSuffixBitsLengthByte = f.read(1)
         trashBitsLength, suffixBitsLength = self.__getTrashAndSuffixBitsLength(trashAndSuffixBitsLengthByte)
+        #print("suffix bit length")
         #print(suffixBitsLength)
         #print(trashBitsLength)
         #self.__int_from_bytes(trashBitsLengthByte)
@@ -142,7 +143,6 @@ class CodeReader:
         f.seek(seekCount)
         letterLengthByte = f.read(1)
         letterLength = self.__int_from_bytes(letterLengthByte)
-        #print(letterLength)
         
         #Skaitom suffix bitukus (bitukai kurie nebuvo uzkoduoti, nes netilpo i ivesta raides ilgi)
         seekCount = 2
@@ -153,14 +153,17 @@ class CodeReader:
         #print(suffixBits)
         
         #Skaitom kiek baitu uzema kodavimo/dekodavimo taisykliu medis
+        print("suffix bytes")
+        print(bytesToRead)
         seekCount = 2 + bytesToRead
         f.seek(seekCount)
-        treeLengthInBytes = f.read(1)
+        treeLengthInBytes = f.read(2)
         treeLength = self.__int_from_bytes(treeLengthInBytes)
-        #print(treeLength)
+        print("tree rules")
+        print(treeLength)
         
         #Skaitom  kodavimo/dekodavimo taisykles
-        seekCount += 1
+        seekCount += 2
         f.seek(seekCount)
         treeBytes = f.read(treeLength)
         treeBits = bitarray()
@@ -176,6 +179,8 @@ class CodeReader:
         allLettersInBitsSeq = bitarray()
         allLettersInBitsSeq.frombytes(lettersInBytes)
         lettersList = self.__chopToLetterInBitsList(allLettersInBitsSeq, letterLength, countEncodedLetters)
+        #print(lettersList)
+        #print(len(lettersList))
         #print(allLettersInBitsSeq)
         #Skaitom  užkoduotus žodžius
         
@@ -184,9 +189,11 @@ class CodeReader:
         codeBytes = f.read()
         encodedTextBits = bitarray()
         encodedTextBits.frombytes(codeBytes)
+        
         encodedTextBits = self.__filterCodedWordAdditionalBits(encodedTextBits, trashBitsLength)
+        #print(toReadBytes)
         #print("encodedWord")
-        #print(len(encodedTextBits))
+        
         
         self.rulesFromEncoder = EncodingRules(treeBits, lettersList)
         self.encodedData = EncodedData(encodedTextBits, suffixBits)
@@ -257,7 +264,7 @@ text2 = input('Dekoduoto failo pavadinimas(orginalus tekstas): ')
 #Dekoduojam teksta is failo
 text1 = r"C:\Users\Dovydas\infoTeorija\tests\encodedFile.txt"
 #Dekoduojam i faila
-text2 = r"C:\Users\Dovydas\infoTeorija\tests\fileToReadREZZ.txt"
+text2 = r"C:\Users\Dovydas\infoTeorija\tests\testREZZ.jpg"
 codeReader = CodeReader(text1)
 encodedData = codeReader.getEncodedData()
 rulesFromEncoder = codeReader.getRulesFromEncoder()
