@@ -14,17 +14,24 @@ if codedSymbolInBitsLength < 2 or codedSymbolInBitsLength > 24:
     print("Skaicius turi buti tarp 2 ir 24")
     sys.exit(3)
 '''
-sys.setrecursionlimit(10000)
-# Nustatom kiek bitu traktuosim kad yra raides ilgis
+# Nuskaitom komandines eilutes parametrus
 codedSymbolInBitsLength = 8
+fileIn = 'test.txt'
+fileOut = 'encoded'
+if len(sys.argv) > 1:
+    codedSymbolInBitsLength = int(sys.argv[1])
+if len(sys.argv) > 2:
+    fileIn = sys.argv[2]
+if len(sys.argv) > 3:
+    fileOut = sys.argv[3]
+
+sys.setrecursionlimit(10000)
 # Nuskaitom norima uzkoduoti faila
-f = open("test.txt", 'rb')
+f = open(fileIn, 'rb')
 allBytes = f.read()
-# Nuskaitom faila i kuri uzkoduosim
-text3 = "encoded"
 
 coder = Coder(allBytes, codedSymbolInBitsLength)
 encodedData = coder.getEncodedData()
 encodingRules = coder.getEncodingRules()
 codeWriter = CodeWriter(encodingRules, encodedData)
-codeWriter.writeToFile(text3)
+codeWriter.writeToFile(fileOut)
