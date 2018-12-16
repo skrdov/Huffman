@@ -153,14 +153,14 @@ class CodeReader:
         #print(suffixBits)
         
         #Skaitom kiek baitu uzema kodavimo/dekodavimo taisykliu medis
-        print("suffix bytes")
-        print(bytesToRead)
+        #print("suffix bytes")
+        #print(bytesToRead)
         seekCount = 2 + bytesToRead
         f.seek(seekCount)
         treeLengthInBytes = f.read(2)
         treeLength = self.__int_from_bytes(treeLengthInBytes)
-        print("tree rules")
-        print(treeLength)
+        #print("tree rules")
+        #print(treeLength)
         
         #Skaitom  kodavimo/dekodavimo taisykles
         seekCount += 2
@@ -261,10 +261,11 @@ if os.path.isfile(text1) == False:
     
 text2 = input('Dekoduoto failo pavadinimas(orginalus tekstas): ')
 '''
+sys.setrecursionlimit(10000)
 #Dekoduojam teksta is failo
 text1 = r"C:\Users\Dovydas\infoTeorija\tests\encodedFile.txt"
 #Dekoduojam i faila
-text2 = r"C:\Users\Dovydas\infoTeorija\tests\testREZZ.jpg"
+text2 = r"C:\Users\Dovydas\infoTeorija\tests\decodedfile.txt"
 codeReader = CodeReader(text1)
 encodedData = codeReader.getEncodedData()
 rulesFromEncoder = codeReader.getRulesFromEncoder()

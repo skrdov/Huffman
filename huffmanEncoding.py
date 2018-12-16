@@ -4,6 +4,7 @@ import sys
 import os.path
 import struct
 from bitarray import bitarray
+from heapq import heappush, heappop
 
 class EncodingRules:
     def __init__(self, treeBits, symbols):
@@ -120,6 +121,7 @@ class Coder:
             currentLetter = self.word[i:i+self.codeWordLength]
             encodedLetter = self.__getEncodedLetter(currentLetter.to01())
             encodedWord.extend(encodedLetter)
+            #print(self.__getEncodedLetter(currentLetter.to01()))
             i += len(currentLetter)
         #print(self.suffixBits)
         return EncodedData(encodedWord, self.suffixBits)
@@ -132,7 +134,10 @@ class Coder:
         uniqueSymbols = self.__getUniqueLettersInWord()
         #print(uniqueSymbols)
         symbolsList = self.__splitListOfSymbolsToListOfSymbolsList(uniqueSymbols)
-        diction = self.__createDictionaryForSymbols(symbolsList, "", {})
+        if(len(symbolsList) == 1):
+            diction = self.__createDictionaryForSymbols(symbolsList, "0", {})
+        else:
+            diction = self.__createDictionaryForSymbols(symbolsList, "", {})
         #print("dict dydis")
         #print(len(diction))
         return diction
@@ -147,62 +152,44 @@ class Coder:
     
     #gaunam dictionary raidems
     def __createDictionaryForSymbols(self, symbolsList, currentSeq, diction):
-        #print(len(symbolsList))
         if(len(symbolsList) == 1):
             diction[((symbolsList[0])[0])[0]] = bitarray(currentSeq)
+            #print(len(currentSeq))
             #print("key: %s, value: %s" % (((symbolsList[0])[0])[0], currentSeq))
             return diction
-        while len(symbolsList) != 2:
+        minHeap = self.__createHeap(symbolsList)
+        #print("recLimit %d" % (sys.getrecursionlimit()))
+        while len(minHeap) != 2:
             #2 mažiausius bucketus apjungiam i viena bucketa. Jei turim [[a],[b],[c],[d]] verciam i [[a], [b], [c,d]]
-            #print(len(symbolsList))
-            symbolsList = self.__merge2LeastBucketsIntoOne(symbolsList)
-            #print(len(symbolsList))
-            #print(len(symbolsList))
+            minHeap = self.__merge2LeastBucketsIntoOne(minHeap)
+            #symbolsList = self.__merge2LeastBucketsIntoOne(symbolsList)
         #Po loopo gaunam lista kuriame yra du itemai, pvz [[a, c, h, ...], [b, d, e, ...]]
-        symbolsList = self.__sortDescending(symbolsList)
-        leftList = self.__splitListOfSymbolsToListOfSymbolsList(symbolsList[0])
+        #symbolsList = self.__sortDescending(symbolsList)
+        leftList = self.__splitListOfSymbolsToListOfSymbolsList(heappop(minHeap)[1])
         currentSeq = currentSeq + "0"
         diction = self.__createDictionaryForSymbols(leftList, currentSeq, diction)
         currentSeq = currentSeq[:len(currentSeq)-1]
-        
-        rightList = self.__splitListOfSymbolsToListOfSymbolsList(symbolsList[1])
+        rightList = self.__splitListOfSymbolsToListOfSymbolsList(heappop(minHeap)[1])
         currentSeq = currentSeq + "1"
         diction = self.__createDictionaryForSymbols(rightList, currentSeq, diction)
         
         return diction
-    
-    def __merge2LeastBucketsIntoOne(self, symbolsList):
-        #print("B4")
-        valuesList = []
-        for i in range(0, len(symbolsList)):
-            valuesList.append(self.__calculateTotalValueOfBucket(symbolsList[i]))
-        #print(len(valuesList))
-        #print(len(symbolsList))
-        leastIndex = valuesList.index(min(valuesList))
-        least = symbolsList[leastIndex]
-        del symbolsList[leastIndex]
-        del valuesList[leastIndex]
-        
-        secondLeastIndex = valuesList.index(min(valuesList))
-        secLeast = symbolsList[secondLeastIndex]
-        del symbolsList[secondLeastIndex]
-        
-        secLeast.extend(least)
-        symbolsList.append(secLeast)
-        return symbolsList
-        
-    '''
-    def __merge2LeastBucketsIntoOne(self, symbolsList):
-        print("B4")
-        symbolsList = self.__sortDescending(symbolsList)
-        least = symbolsList[-1]
-        secLeast = symbolsList[-2]
-        least.extend(secLeast)
-        symbolsList.pop()
-        symbolsList.pop()
-        symbolsList.append(least) 
-        return symbolsList
-    '''
+    def __createHeap(self, symbolsList):
+        heap = []
+        for item in symbolsList:
+            value = self.__calculateTotalValueOfBucket(item)
+            heappush(heap, (value, item))
+        return heap
+    def __merge2LeastBucketsIntoOne(self, minHeap):
+        least = heappop(minHeap)
+        secLeast = heappop(minHeap)
+        newItem = []
+        newItem.extend(secLeast[1])
+        newItem.extend(least[1])
+        newItemValue = secLeast[0] + least[0]
+        heappush(minHeap, (newItemValue, newItem))
+        return minHeap
+
     def __sortDescending(self, symbolsList):
         valuesList = []
         #print(len(symbolsList))
@@ -219,24 +206,6 @@ class Coder:
                     symbolsList[j] = temp
                     i -= 1
         return symbolsList
-    '''
-    def __sortDescending(self, symbolsList):
-        #print(symbolsList)
-        print(len(symbolsList))
-        for i in range(0, len(symbolsList)-1):
-            value1 = self.__calculateTotalValueOfBucket(symbolsList[i])
-            for j in range(i+1, len(symbolsList)):
-                #print("%d is %d" % (i, j))
-                #print(value1)
-                value2 = self.__calculateTotalValueOfBucket(symbolsList[j])
-                #print(value2)
-                if(value2 > value1):
-                    temp = symbolsList[i]
-                    symbolsList[i] = symbolsList[j]
-                    symbolsList[j] = temp
-                    i -= 1
-        return symbolsList
-    '''
     def __calculateTotalValueOfBucket(self, bucket):
         totalValue = 0
         for item in bucket:
@@ -282,7 +251,6 @@ class CodeWriter:
         encodedWordInBytes = self.__getEncodedWordInBytes(encodedWord)
         treeRulesBytes = self.__getBytesFromNonFullBits(self.encodingRules.getTreeBits())
         
-        
         letters = self.encodingRules.getLetters()
         letters = self.__convertLettersToBitsArray(letters)
         lettersBytes = self.__getBytesFromNonFullBits(letters)
@@ -290,20 +258,22 @@ class CodeWriter:
         treeRequiredBytes = len(treeRulesBytes)
         treeRequiredBytesBytes = self.__changeTo2Bytes(self.__int_to_bytes(treeRequiredBytes))
         #print(len(encodedWord))
-        print("tree rules")
-        print(len(treeRulesBytes))
+        #print("tree rules")
+        #print(len(treeRulesBytes))
+        '''
         bbb = bitarray()
         bbb.frombytes(treeRequiredBytesBytes)
         print(bbb)
+        '''
         
         f = open(fileName, 'wb')
         f.write(trashAndSuffixBitsLengthByte)
         f.write(letterLengthByte)
-        print("suffix")
-        print(len(suffixBitsBytes))
+        #print("suffix")
+        #print(len(suffixBitsBytes))
         f.write(suffixBitsBytes)
-        print("tree")
-        print(len(treeRequiredBytesBytes))
+        #print("tree")
+        #print(len(treeRequiredBytesBytes))
         f.write(treeRequiredBytesBytes)
         f.write(treeRulesBytes)
         f.write(lettersBytes)
@@ -382,10 +352,11 @@ if codedSymbolInBitsLength < 2 or codedSymbolInBitsLength > 24:
     print("Skaicius turi buti tarp 2 ir 24")
     sys.exit(3)
 '''
+sys.setrecursionlimit(10000)
 #Nustatom kiek bitu traktuosim kad yra raides ilgis
-codedSymbolInBitsLength = 5
+codedSymbolInBitsLength = 8
 #Nuskaitom norima uzkoduoti faila
-f = open(r"C:\Users\Dovydas\infoTeorija\tests\test.jpg", 'rb')
+f = open(r"C:\Users\Dovydas\infoTeorija\tests\text2.txt", 'rb')
 allBytes = f.read()
 #Nuskaitom faila i kuri uzkoduosim 
 text3 =  r"C:\Users\Dovydas\infoTeorija\tests\encodedFile.txt"
