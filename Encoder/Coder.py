@@ -195,7 +195,7 @@ class Coder:
             if letter.to01() in dict:
                 dict[letter.to01()] += 1
             else:
-                dict[letter.to01()] = 0
+                dict[letter.to01()] = 1
             i += len(letter)
         dictList = []
         for key, value in dict.items():
