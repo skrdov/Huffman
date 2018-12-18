@@ -1,7 +1,7 @@
 import sys
 
 from Decoder.Decoder import Decoder
-from Encoder.CodeReader import CodeReader
+from Decoder.CodeReader import CodeReader
 
 '''
 text1 = input('Uzkoduoto failo pavadinimas: ')
