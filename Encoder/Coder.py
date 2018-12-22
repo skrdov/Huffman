@@ -8,11 +8,11 @@ from Model.Node import Node
 
 
 class Coder:
-    def __init__(self, word, codeWordLength):
+    def __init__(self, word, letterLength):
         self.word = bitarray()
         self.word.frombytes(word)
         # print(self.word)
-        self.codeWordLength = codeWordLength
+        self.letterLength = letterLength
         # Bitai kurie nebeiejo i raide. Pvz:. jei k = 4 ir turim žodį: 010110, tai 0101 bus viena raidė, o galune 10 nebesudarys raides
         self.suffixBits = bitarray()
         self.suffixBits, self.word = self.__getSuffixBits()
@@ -22,7 +22,7 @@ class Coder:
         self.lettersDictionary = self.__getLettersDictionary()
 
     def __getSuffixBits(self):
-        suffixBitsLength = len(self.word) % self.codeWordLength
+        suffixBitsLength = len(self.word) % self.letterLength
         if suffixBitsLength == 0:
             return bitarray(), self.word
         # print(suffixBitsLength)
@@ -90,7 +90,7 @@ class Coder:
         encodedWord = bitarray()
         i = 0
         while i < len(self.word):
-            currentLetter = self.word[i:i + self.codeWordLength]
+            currentLetter = self.word[i:i + self.letterLength]
             encodedLetter = self.__getEncodedLetter(currentLetter.to01())
             encodedWord.extend(encodedLetter)
             # print(self.__getEncodedLetter(currentLetter.to01()))
@@ -193,7 +193,7 @@ class Coder:
         length = len(self.word)
         dict = {}
         while i < length:
-            letter = self.word[i:i + self.codeWordLength]
+            letter = self.word[i:i + self.letterLength]
             if letter.to01() in dict:
                 dict[letter.to01()] += 1
             else:

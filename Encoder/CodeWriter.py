@@ -33,11 +33,6 @@ class CodeWriter:
         # print(len(encodedWord))
         # print("tree rules")
         # print(len(treeRulesBytes))
-        '''
-        bbb = bitarray()
-        bbb.frombytes(treeRequiredBytesBytes)
-        print(bbb)
-        '''
 
         f = open(fileName, 'wb')
         f.write(trashAndSuffixBitsLengthByte)
