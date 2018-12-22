@@ -16,6 +16,8 @@ class Coder:
         # Bitai kurie nebeiejo i raide. Pvz:. jei k = 4 ir turim žodį: 010110, tai 0101 bus viena raidė, o galune 10 nebesudarys raides
         self.suffixBits = bitarray()
         self.suffixBits, self.word = self.__getSuffixBits()
+        if len(self.word) < 1:
+            raise Exception('Ivesties failas negali buti mazesnis nei koduojamo zodzio ilgis')
         # print(self.suffixBits)
         self.lettersDictionary = self.__getLettersDictionary()
 
