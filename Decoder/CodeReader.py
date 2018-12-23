@@ -2,6 +2,7 @@ from bitarray import bitarray
 
 from Model.EncodedData import EncodedData
 from Model.EncodingRules import EncodingRules
+from Model.DecodingRules import DecodingRules
 
 
 class CodeReader:
@@ -21,16 +22,12 @@ class CodeReader:
         # Skaitom kiek bituku paskutiniame teksto baite bereiksmiai + tame paciame baite kiek liko neuzkoduotu bituku (originalaus zodzio galune)
         trashAndSuffixBitsLengthByte = f.read(1)
         trashBitsLength, suffixBitsLength = self.__getTrashAndSuffixBitsLength(trashAndSuffixBitsLengthByte)
-        # print("suffix bit length")
-        # print(suffixBitsLength)
-        # print(trashBitsLength)
-        # self.__int_from_bytes(trashBitsLengthByte)
 
         # Skaitom koks raides ilgis bitukais originaliame žodyje
         seekCount = 1
         f.seek(seekCount)
         letterLengthByte = f.read(1)
-        letterLength = self.__int_from_bytes(letterLengthByte)
+        self.letterLength = self.__int_from_bytes(letterLengthByte)
 
         # Skaitom suffix bitukus (bitukai kurie nebuvo uzkoduoti, nes netilpo i ivesta raides ilgi)
         seekCount = 2
@@ -38,52 +35,40 @@ class CodeReader:
         bytesToRead = self.__getBytesAmountToRead(suffixBitsLength)
         suffixBytes = f.read(bytesToRead)
         suffixBits = self.__getSuffixBits(suffixBytes, suffixBitsLength)
-        # print(suffixBits)
-
-        # Skaitom kiek baitu uzema kodavimo/dekodavimo taisykliu medis
-        # print("suffix bytes")
-        # print(bytesToRead)
-        seekCount = 2 + bytesToRead
-        f.seek(seekCount)
-        treeLengthInBytes = f.read(2)
-        treeLength = self.__int_from_bytes(treeLengthInBytes)
-        # print("tree rules")
-        # print(treeLength)
 
         # Skaitom  kodavimo/dekodavimo taisykles
-        seekCount += 2
+        seekCount += bytesToRead
         f.seek(seekCount)
-        treeBytes = f.read(treeLength)
-        treeBits = bitarray()
-        treeBits.frombytes(treeBytes)
-        treeBits = self.__filterTrashBits(treeBits)
-        countEncodedLetters = self.__getEncodedLettersAmount(treeBits)
-
-        letterBits = letterLength * countEncodedLetters
-        toReadBytes = self.__getBytesAmountToRead(letterBits)
-        seekCount += treeLength
-        f.seek(seekCount)
-        lettersInBytes = f.read(toReadBytes)
-        allLettersInBitsSeq = bitarray()
-        allLettersInBitsSeq.frombytes(lettersInBytes)
-        lettersList = self.__chopToLetterInBitsList(allLettersInBitsSeq, letterLength, countEncodedLetters)
-        # print(lettersList)
-        # print(len(lettersList))
-        # print(allLettersInBitsSeq)
-        # Skaitom  užkoduotus žodžius
-
-        seekCount += toReadBytes
-        f.seek(seekCount)
-        codeBytes = f.read()
-        encodedTextBits = bitarray()
-        encodedTextBits.frombytes(codeBytes)
-
+        
+        treeEncodedWordBitsinBytes = f.read()
+        treeEncodedWordBits = bitarray()
+        treeEncodedWordBits.frombytes(treeEncodedWordBitsinBytes)
+        
+        encodedTextBits, dict = self.__extractEncodingDecodingRules(treeEncodedWordBits)
         encodedTextBits = self.__filterCodedWordAdditionalBits(encodedTextBits, trashBitsLength)
-        # print(toReadBytes)
-        # print("encodedWord")
-
-        self.rulesFromEncoder = EncodingRules(treeBits, lettersList)
+        self.rulesFromEncoder = DecodingRules(dict, self.letterLength)
         self.encodedData = EncodedData(encodedTextBits, suffixBits)
+        
+    #return rules dictionary and bits that are left
+    def __extractEncodingDecodingRules(self, bits):
+        dict = {}
+        currentSeq = bitarray()
+        leftBits, dict = self.__getEncodingDecodingDictionary(bits, dict, currentSeq)
+        #print(leftBits[:25])
+        return leftBits, dict
+    def __getEncodingDecodingDictionary(self, bits, dict, currentSeq):
+        if bits[0] == 0:
+            dict[currentSeq.to01()] = bits[1:1+self.letterLength]
+            return bits[1+self.letterLength:], dict
+        elif bits[0] == 1:
+            del bits[0]
+            currentSeq.append(False)
+            leftBits, dict = self.__getEncodingDecodingDictionary(bits, dict, currentSeq)
+            currentSeq.pop()
+            currentSeq.append(True)
+            leftBits, dict = self.__getEncodingDecodingDictionary(leftBits, dict, currentSeq)
+            currentSeq.pop()
+            return leftBits, dict
 
     def __getSuffixBits(self, suffixBytes, suffixBitsLength):
         if suffixBitsLength == 0:
@@ -97,7 +82,6 @@ class CodeReader:
         if bits % 8 == 0:
             return int(bits / 8)
         else:
-            # print(int(bits / 8) + 1)
             return int(bits / 8) + 1
 
     def __getTrashAndSuffixBitsLength(self, trashAndSuffixBitsLengthByte):

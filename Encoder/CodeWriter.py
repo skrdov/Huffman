@@ -10,61 +10,28 @@ class CodeWriter:
         # Rasom: 3 bitai pasako kiek uzkoduotam zodyje yra nereikalingu bituku, tam kad uzkoduotas zodis tilptu i pilna baita. + 5 bitai pasako kiek bitu liko neuzkoduotu
         # Gaunam kiek bitu nuskaityti neuzkoduotai galunei
         # Rasom neuzkoduota galune
-        # Rasom kiek baitu skirta kodavimo/dekodavimo taisykliu medziui
         # Rasom medi
         # Rasom viska iki galo - uzkoduota zodi
         encodedWord = self.encodedData.getEncodedWord()
         suffixBits = self.encodedData.getSuffixBits()
-        # print("suffix bit length")
-        # print(len(suffixBits))
-        letterLength = len(self.encodingRules.getSymbols()[0])
-        trashAndSuffixBitsLengthByte = self.__getTrashAndSuffixBitsLengthByte(len(encodedWord), len(suffixBits))
+        letterLength = self.encodingRules.getLetterLength()
         letterLengthByte = self.__int_to_bytes(letterLength)
         suffixBitsBytes = self.__getBytesFromNonFullBits(suffixBits)
-        encodedWordInBytes = self.__getEncodedWordInBytes(encodedWord)
-        treeRulesBytes = self.__getBytesFromNonFullBits(self.encodingRules.getTreeBits())
-
-        letters = self.encodingRules.getSymbols()
-        letters = self.__convertLettersToBitsArray(letters)
-        lettersBytes = self.__getBytesFromNonFullBits(letters)
-        # print(len(lettersBytes))
-        treeRequiredBytes = len(treeRulesBytes)
-        treeRequiredBytesBytes = self.__changeTo2Bytes(self.__int_to_bytes(treeRequiredBytes))
-        # print(len(encodedWord))
-        # print("tree rules")
-        # print(len(treeRulesBytes))
-
+        treeRulesPlusEncodedWord = bitarray()
+        treeBits = self.encodingRules.getTreeBits()
+        #treeBits = self.__deleteLatestOnes(treeBits)
+        treeRulesPlusEncodedWord.extend(treeBits)
+        treeRulesPlusEncodedWord.extend(encodedWord)
+        #print(encodedWord[:25])
+        treeRulesPlusEncodedWordBytes = self.__addBitsToCompleteLastByte(treeRulesPlusEncodedWord)
+        trashAndSuffixBitsLengthByte = self.__getTrashAndSuffixBitsLengthByte(len(treeRulesPlusEncodedWord), len(suffixBits))
+        
         f = open(fileName, 'wb')
         f.write(trashAndSuffixBitsLengthByte)
         f.write(letterLengthByte)
-        # print("suffix")
-        # print(len(suffixBitsBytes))
         f.write(suffixBitsBytes)
-        # print("tree")
-        # print(len(treeRequiredBytesBytes))
-        f.write(treeRequiredBytesBytes)
-        f.write(treeRulesBytes)
-        f.write(lettersBytes)
-        f.write(encodedWordInBytes)
+        f.write(treeRulesPlusEncodedWordBytes)
         f.close()
-
-    def __changeTo2Bytes(self, bytes):
-        if len(bytes) == 2:
-            return bytes
-        else:
-            bits = bitarray()
-            bits.frombytes(bytes)
-            newBits = bitarray(8)
-            newBits.setall(False)
-            newBits.extend(bits)
-            return newBits.tobytes()
-
-    def __convertLettersToBitsArray(self, letters):
-        bits = bitarray()
-        for letter in letters:
-            # print(letter)
-            bits.extend(letter)
-        return bits
 
     def __getTrashAndSuffixBitsLengthByte(self, encodedWordLength, suffixBitsLength):
         if encodedWordLength % 8 == 0:
@@ -88,7 +55,7 @@ class CodeWriter:
             bits.append(True)
         return bits
 
-    def __getEncodedWordInBytes(self, bitArray):
+    def __addBitsToCompleteLastByte(self, bitArray):
         bitsToAdd = self.__bitsToGetFullByte(len(bitArray))
         bitArray.extend(self.__appendBits(bitsToAdd))
         bytes = bitArray.tobytes()

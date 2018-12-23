@@ -1,11 +1,10 @@
 class EncodingRules:
-    def __init__(self, treeBits, symbols):
-        # pvz jei yra 11110a0b11....., tai treeBits - bitukai; symbols - a,b
+    def __init__(self, treeBits, letterLength):
         self.treeBits = treeBits
-        self.symbols = symbols
+        self.letterLength = letterLength
 
     def getTreeBits(self):
         return self.treeBits
+    def getLetterLength(self):
+        return self.letterLength
 
-    def getSymbols(self):
-        return self.symbols

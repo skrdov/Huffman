@@ -18,8 +18,8 @@ class Coder:
         self.suffixBits, self.word = self.__getSuffixBits()
         if len(self.word) < 1:
             raise Exception('Ivesties failas negali buti mazesnis nei koduojamo zodzio ilgis')
-        # print(self.suffixBits)
         self.lettersDictionary = self.__getLettersDictionary()
+        #print(self.lettersDictionary)
 
     def __getSuffixBits(self):
         suffixBitsLength = len(self.word) % self.letterLength
@@ -31,10 +31,8 @@ class Coder:
 
     def getEncodingRules(self):
         rootNode = self.__createTree()
-        treeStr = self.__getEncodingDecodingRules(rootNode)
-        # print(treeStr)
-        treeBits, letters = self.__separateTreeBitsAndLetters(treeStr)
-        encodingRules = EncodingRules(treeBits, letters)
+        treeBits = self.__getEncodingDecodingRules(rootNode)
+        encodingRules = EncodingRules(treeBits, self.letterLength)
         return encodingRules
 
     # pvz jei yra 11110a0b11....., tai treeBits - bitukai; symbols - a,b
@@ -50,12 +48,12 @@ class Coder:
 
     # Gaunam taisykles. Pvz:. 1110a110b... -> a dekoduojama i 0001, b i
     def __getEncodingDecodingRules(self, node):
-        str = []
+        str = bitarray()
         if node.getLetter() == '':
             str.append(True)
         else:
             str.append(False)
-            str.append(node.getLetter())
+            str.extend(node.getLetter())
         if node.leftChild is not None:
             str.extend(self.__getEncodingDecodingRules(node.leftChild))
         if node.rightChild is not None:
@@ -66,12 +64,12 @@ class Coder:
         rootNode = Node('')
         uniqueCharsRepresentedInBits = self.__getUniqueLettersInWord()
         for letter in uniqueCharsRepresentedInBits:
-            rootNode = self.__updateTree(rootNode, letter)
+            # letter[0], kadangi letter butu [raide, daznis]
+            rootNode = self.__updateTree(rootNode, letter[0])
         return rootNode
 
     def __updateTree(self, node, letter):
-        # letter[0], kadangi letter butu [raide, daznis]
-        encodedLetter = self.lettersDictionary[letter[0]]
+        encodedLetter = self.lettersDictionary[letter]
         currentNode = node
         for i in range(0, len(encodedLetter)):
             bit = encodedLetter[i]
@@ -83,7 +81,7 @@ class Coder:
                 if currentNode.rightChild is None:
                     currentNode.rightChild = Node('')
                 currentNode = currentNode.rightChild
-        currentNode.setLetter(letter[0])
+        currentNode.setLetter(letter)
         return node
 
     def getEncodedData(self):
@@ -163,23 +161,6 @@ class Coder:
         newItemValue = secLeast[0] + least[0]
         heappush(minHeap, (newItemValue, newItem))
         return minHeap
-
-    def __sortDescending(self, symbolsList):
-        valuesList = []
-        # print(len(symbolsList))
-        for i in range(0, len(symbolsList)):
-            valuesList.append(self.__calculateTotalValueOfBucket(symbolsList[i]))
-        for i in range(0, len(symbolsList) - 1):
-            for j in range(i + 1, len(symbolsList)):
-                if (valuesList[i] > valuesList[j]):
-                    tempVal = valuesList[i]
-                    valuesList[i] = valuesList[j]
-                    valuesList[j] = tempVal
-                    temp = symbolsList[i]
-                    symbolsList[i] = symbolsList[j]
-                    symbolsList[j] = temp
-                    i -= 1
-        return symbolsList
 
     def __calculateTotalValueOfBucket(self, bucket):
         totalValue = 0
